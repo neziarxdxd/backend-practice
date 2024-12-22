@@ -3,6 +3,8 @@ package models
 import (
 	"fmt"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type User struct {
@@ -15,16 +17,17 @@ type User struct {
 	IsDeleted bool
 }
 
-func CreateUser(user *User) error {
-	if err := DB.Create(&user).Error; err != nil {
-		return err
+func CreateUser(tx *gorm.DB) (user *User, err error) {
+	user = &User{}
+	if err := tx.Create(&user).Error; err != nil {
+		return nil, err
 	}
-	return nil
+	return user, nil
 }
 
-func GetAllUsers() ([]*User, error) {
+func GetAllUsers(tx *gorm.DB) ([]*User, error) {
 	u := []*User{}
-	if err := DB.Find(&u).Error; err != nil {
+	if err := tx.Find(&u).Error; err != nil {
 		fmt.Println("Failed to get users")
 		fmt.Println(err)
 		return nil, err

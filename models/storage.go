@@ -1,45 +1,39 @@
+// models/database.go
 package models
 
 import (
+	"backend-practice/helper"
 	"fmt"
+	"log"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
 
-// DB is the he database connection.
-var DB *gorm.DB
+// Database holds the database connection
+type Database struct {
+	DB *gorm.DB
+}
 
-// SetupDatabase migrates and sets up the database.
-func SetupDatabase() {
-	// u := helper.GetEnv("DATABASE_USER", "golang")
-	// p := helper.GetEnv("DATABSE_PASSWORD", "golang")
-	// h := helper.GetEnv("DATABASE_HOST", "localhost:3306")
-	// n := helper.GetEnv("DATABASE_NAME", "go_test")
-	// q := "charset=utf8mb4&parseTime=True&loc=Local"
+// SetupDatabase initializes and migrates the database.
+func SetupDatabase() (*Database, error) {
+	username := helper.GetEnv("DATABASE_USERNAME", "")
+	password := helper.GetEnv("DATABASE_PASSWORD", "")
+	port := helper.GetEnv("DATABASE_PORT", "")
+	databaseName := helper.GetEnv("DATABASE_NAME", "")
 
-	// // Assemble the connection string.
-	// // import "gorm.io/driver/postgres"
-	// // ref: https://gorm.io/docs/connecting_to_the_database.html#PostgreSQL
-	dsn := "user=postgres password= dbname=postgres port=5432 sslmode=disable TimeZone=Asia/Taipei"
+	dsn := fmt.Sprintf("user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=Asia/Taipei",
+		username, password, databaseName, port)
+
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-
-	// Migrate the schema
-	tx := db
-
-	if err := tx.AutoMigrate(&User{}); err != nil {
-		panic("failed to migrate database User: " + err.Error())
-	}
-
-	if err := tx.AutoMigrate(&Food{}); err != nil {
-		panic("failed to migrate database Food: " + err.Error())
-	}
-
 	if err != nil {
-		fmt.Println("Could not open database connection")
-	} else {
-		fmt.Println("Testing huhuhu")
+		return nil, fmt.Errorf("could not open database connection: %w", err)
 	}
 
-	DB = db
+	if err := db.AutoMigrate(&User{}, &Food{}); err != nil {
+		return nil, fmt.Errorf("failed to migrate database: %w", err)
+	}
+
+	log.Println("Successfully connected to database")
+	return &Database{DB: db}, nil
 }
